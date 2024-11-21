@@ -3,39 +3,39 @@ on: [push]
 
 jobs:
   setup-ngrok:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
-      - name: Update and Install Dependencies
+      - name: Create New User (Admin) on macOS
         run: |
-          sudo apt-get update
-          sudo apt-get install -y curl
+          sudo sysadminctl -addUser mishuka -password "123qwe!@#QWE" -admin
+          echo "User 'mishuka' created with administrative privileges."
 
-      - name: Create New User and Enable RDP
+      - name: Enable Screen Sharing for Remote Desktop
         run: |
-          sudo adduser --gecos "Full Name,RoomNumber,WorkPhone,HomePhone" --disabled-password mishuka
-          echo 'mishuka:123qwe!@#QWE' | sudo chpasswd
-          sudo usermod -aG sudo mishuka
+          # Enable Remote Management (Screen Sharing)
+          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate -configure -access -on \
+            -users mishuka -privs -all
+          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -restart -agent -privs -all
 
-          # Install xrdp
-          sudo apt-get install -y xrdp
-          sudo systemctl enable xrdp
-          sudo systemctl start xrdp
-
-          # Allow RDP through the firewall
-          sudo ufw allow 3389
+          # Allow remote desktop through the firewall
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /System/Library/CoreServices/RemoteManagement/ARDAgent.app
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp /System/Library/CoreServices/RemoteManagement/ARDAgent.app
 
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: Install Homebrew
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+          eval "$(/opt/homebrew/bin/brew shellenv)"
+
       - name: Install Ngrok
         run: |
-          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
-          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
-          sudo apt-get update
-          sudo apt-get install -y ngrok
+          brew install --cask ngrok
 
       - name: Authenticate Ngrok
         run: ngrok config add-authtoken 2pA1P07jrsAn5HnHClfiKk3yvrp_2kjUxtciau7P5G56yH5gR
 
       - name: Run Ngrok with Debugging
-        run: ngrok tcp 3389 --log=stdout --log-level=debug
+        run: ngrok tcp 5900 --log=stdout --log-level=debug
