@@ -3,39 +3,43 @@ on: [push]
 
 jobs:
   setup-ngrok:
-    runs-on: macos-latest
+    runs-on: windows-latest
     steps:
-      - name: Create New User (Admin) on macOS
+      - name: Create New User and Enable RDP
+        shell: pwsh
         run: |
-          sudo sysadminctl -addUser mishuka -password "123qwe!@#QWE" -admin
-          echo "User 'mishuka' created with administrative privileges."
+          $Password = ConvertTo-SecureString "123qwe!@#QWE" -AsPlainText -Force
+          New-LocalUser -Name "mishuka" -Password $Password -FullName "Full Name" -Description "Description"
 
-      - name: Enable Screen Sharing for Remote Desktop
-        run: |
-          # Enable Remote Management (Screen Sharing)
-          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate -configure -access -on \
-            -users mishuka -privs -all
-          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -restart -agent
+          Add-LocalGroupMember -Group "Administrators" -Member "mishuka"
 
-          # Allow Screen Sharing through the firewall
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /System/Library/CoreServices/RemoteManagement/ARDAgent.app
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp /System/Library/CoreServices/RemoteManagement/ARDAgent.app
+          Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
+
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+          Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name "UserAuthentication" -Value 1
 
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Install Homebrew
+      - name: Install Chocolatey
+        shell: pwsh
         run: |
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-          echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
-          eval "$(/opt/homebrew/bin/brew shellenv)"
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
       - name: Install Ngrok
-        run: |
-          brew install --cask ngrok
+        shell: cmd
+        run: choco install ngrok -y
+
+      - name: Wait for 5 seconds
+        shell: pwsh
+        run: Start-Sleep -Seconds 5
 
       - name: Authenticate Ngrok
         run: ngrok config add-authtoken 2pA1P07jrsAn5HnHClfiKk3yvrp_2kjUxtciau7P5G56yH5gR
 
       - name: Run Ngrok with Debugging
-        run: ngrok tcp 5900 --log=stdout --log-level=debug
+        shell: cmd
+        run: ngrok tcp 3389 --log=stdout --log-level=debug
