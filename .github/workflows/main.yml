@@ -35,9 +35,7 @@ jobs:
           sudo apt-get install -y ngrok
 
       - name: Authenticate Ngrok
-        env:
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
-        run: ngrok config add-authtoken $NGROK_AUTHTOKEN
+        run: ngrok config add-authtoken 2pA1P07jrsAn5HnHClfiKk3yvrp_2kjUxtciau7P5G56yH5gR
 
       - name: Run Ngrok with Debugging
         run: ngrok tcp 3389 --log=stdout --log-level=debug
