@@ -3,7 +3,7 @@ on: [push]
 
 jobs:
   setup-ngrok:
-    runs-on: windows-latest
+    runs-on: windows-latest      
     steps:
       - name: Create New User and Enable RDP
         shell: pwsh
