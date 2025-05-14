@@ -38,7 +38,7 @@ jobs:
         run: Start-Sleep -Seconds 5
 
       - name: Authenticate Ngrok
-        run: ngrok config add-authtoken 2pA1P07jrsAn5HnHClfiKk3yvrp_2kjUxtciau7P5G56yH5gR
+        run: ngrok config add-authtoken 2x4myhB3OQRUwZJEzDzVPmlgVZj_7dxDJcLHhtS64kw4HkD5X
 
       - name: Run Ngrok with Debugging
         shell: cmd
